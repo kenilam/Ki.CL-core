@@ -15,12 +15,9 @@ node_modules
 .cursor
 
 # Build output, regenerated during the image build.
-Client/dist
 Server/Types/graphql.ts
-Client/src/generated
 
 *.log
 .DS_Store
 
 # The sheet reader is its own service, with its own image.
-Omr

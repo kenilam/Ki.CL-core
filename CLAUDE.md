@@ -4,27 +4,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-This is a Yarn 4 (Berry) workspace repo with three workspaces: `Server`, `Codegen`, `Client`. Node >=24 required.
+This is a Yarn 4 (Berry) workspace repo with two workspaces: `Server` and `Codegen`. Node >=24 required.
 
 ```bash
 yarn install                # install all workspaces
-yarn codegen                # regenerate Server/Types/graphql.ts and Client/src/generated/* from schema.graphql files
-yarn development            # codegen + build Client + start Server (tsx watch, NODE_ENV=development)
-yarn production              # codegen + build Client + start Server (NODE_ENV=production)
+yarn codegen                # regenerate Server/Types/graphql.ts from the schema.graphql files
+yarn development            # codegen + start Server (tsx watch, NODE_ENV=development)
+yarn production              # codegen + start Server (NODE_ENV=production)
 yarn build                   # codegen + tsc --noEmit (typecheck only, no test suite exists)
 yarn lint                    # eslint Server/ --ext .ts
 ```
 
 There is no test runner configured - verification is `yarn build` (typecheck) and `yarn lint`.
 
-Codegen must be re-run (`yarn codegen`) after editing any `Server/Modules/**/*.graphql` schema file or `Client/src/operations.graphql` - it regenerates both server resolver types (`Server/Types/graphql.ts`) and the client's typed hooks (`Client/src/generated/`). Scalar JS↔GraphQL mappings live in `Codegen/codegen.ts` and `Codegen/scalars.ts`.
+Codegen must be re-run (`yarn codegen`) after editing any `Server/Modules/**/*.graphql` schema file - it regenerates the server resolver types (`Server/Types/graphql.ts`). Scalar JS↔GraphQL mappings live in `Codegen/codegen.ts` and `Codegen/scalars.ts`.
 
 ## Architecture
 
 ### Workspaces
 - **Server** - Apollo Server 4 + Express 5 GraphQL API (TypeScript, ESM, `tsx` runtime, no build step for dev).
-- **Codegen** - GraphQL Code Generator config; reads all `Server/Modules/**/*.graphql` schemas and emits typed resolvers server-side and typed operations/hooks client-side.
-- **Client** - `@ki-cl/client`, a React 19 + Apollo Client package built with Vite and exposed via Module Federation (`@module-federation/vite`), served by the Server itself at `/client` (see below).
+- **Codegen** - GraphQL Code Generator config; reads all `Server/Modules/**/*.graphql` schemas and emits typed resolvers.
+
+### Federation
+Core is a subgraph. [Ki.CL-api](https://github.com/kenilam/Ki.CL-api) is the gateway: it composes core with the other services into the graph the site calls at `/api`, and it owns the browser-facing client. The gateway reads each service's schema from the registry bucket, never from the service, so core builds its schema with `makeExecutableSchema` as before and has no `_service` or `_entities` fields.
+
+`Server/TypeDefs.ts` is the merged SDL; `Server/Schema.ts` adds the resolvers to it. `Server/Scripts/registry.ts` prints the SDL with federation's `@link` (`sdl`), composes it with every other published record (`check`), and writes core's record (`publish`). `cloudbuild.yaml` runs `check` before deploying and `publish` after. Each service publishes `services/<name>.json` with its name, URL and SDL; the dev registry is `ki-cl-registry-dev` and production's is `ki-cl-registry`.
+
+New services prefix their root fields with their name (`colourFieldPick`), and their `check` fails a field without it. Every type a new service returns also has an `id`, so any consumer's Apollo cache normalizes it with no config. Core's fields and types predate both rules and stay as they are; they leave core with their modules, renamed on the way out.
 
 ### Module-per-feature schema
 Each GraphQL feature lives under `Server/Modules/<Name>/` with a co-located `schema.graphql` + `resolver.ts` (and often `validation.ts`). `Server/Schema.ts` globs every `Modules/**/*.graphql` and `Modules/**/resolver.{ts,js}`, merges them with `@graphql-tools/merge`, and builds the schema with `makeExecutableSchema`. To add a GraphQL feature, add a new `Modules/<Name>/` folder - no central registration is needed beyond that.

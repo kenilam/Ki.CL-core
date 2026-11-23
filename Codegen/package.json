@@ -4,14 +4,11 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "operations": "tsx generateOperations.ts",
-    "generate": "tsx generateOperations.ts && graphql-codegen --config codegen.ts"
+    "generate": "graphql-codegen --config codegen.ts"
   },
   "dependencies": {
     "@graphql-codegen/cli": "^7.2.0",
-    "@graphql-codegen/client-preset": "^6.1.0",
     "@graphql-codegen/typescript": "^6.1.0",
-    "@graphql-codegen/typescript-operations": "^6.1.2",
     "@graphql-codegen/typescript-resolvers": "^6.1.0",
     "@graphql-tools/load-files": "^7.0.1",
     "@graphql-tools/merge": "^9.2.2",
