@@ -11,17 +11,6 @@ const SCALAR_MAP_SERVER = {
   JSONObject: 'Record<string, string | number>',
 };
 
-const SCALAR_MAP_CLIENT = {
-  DateTime: '../scalars#DateTimeString',
-  EmailAddress: '../scalars#EmailAddress',
-  JWT: '../scalars#JWT',
-  UUID: '../scalars#UUID',
-  URL: '../scalars#URL',
-  NonEmptyString: '../scalars#NonEmptyString',
-  AcceptLanguage: 'string',
-  JSONObject: 'Record<string, string | number>',
-};
-
 const config: CodegenConfig = {
   schema: '../Server/Modules/**/*.graphql',
   generates: {
@@ -36,19 +25,6 @@ const config: CodegenConfig = {
         contextType: 'server/Context/index.js#Context',
         scalars: SCALAR_MAP_SERVER,
       },
-    },
-    // Auto-generated operations (all fields), typed documents and client types
-    '../Client/src/generated/': {
-      preset: 'client',
-      plugins: [],
-      presetConfig: {
-        gqlTagName: 'gql',
-      },
-      config: {
-        scalars: SCALAR_MAP_CLIENT,
-        dedupeFragments: true,
-      },
-      documents: '../Client/src/operations.graphql',
     },
   },
 };
