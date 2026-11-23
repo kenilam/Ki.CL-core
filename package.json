@@ -1,5 +1,5 @@
 {
-  "name": "ki-cl-api",
+  "name": "ki-cl-core",
   "version": "2.0.0",
   "description": "Ki.CL Backend - Apollo GraphQL API",
   "type": "module",
@@ -10,23 +10,21 @@
   },
   "workspaces": [
     "Server",
-    "Codegen",
-    "Client"
+    "Codegen"
   ],
   "scripts": {
-    "development": "yarn codegen && yarn workspace @ki-cl/client run build && NODE_ENV=development tsx watch Server/index.ts",
-    "production": "yarn codegen && yarn workspace @ki-cl/client run build && NODE_ENV=production tsx Server/index.ts",
+    "development": "yarn codegen && NODE_ENV=development tsx watch Server/index.ts",
+    "production": "yarn codegen && NODE_ENV=production tsx Server/index.ts",
     "start": "yarn run development",
     "build": "yarn codegen && tsc --noEmit",
     "lint": "oxlint",
-    "codegen": "yarn workspace codegen run generate",
-    "codegen:operations": "yarn workspace codegen run operations"
+    "codegen": "yarn workspace codegen run generate"
   },
   "author": "Keni Lam",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kenilam/Ki.CL-api.git"
+    "url": "git+https://github.com/kenilam/Ki.CL-core.git"
   },
   "devDependencies": {
     "@types/app-root-path": "^3.1.0",

@@ -3,12 +3,6 @@ build:
 	yarn run build
 	@echo done
 
-.PHONY: client
-client:
-	@echo ⌛ building client...
-	yarn workspace @ki-cl/client run build
-	@echo done
-
 codegen:
 	@echo ⌛ generating...
 	yarn run codegen
@@ -23,16 +17,6 @@ lint:
 	@echo ⌛ linting...
 	yarn run lint
 	@echo done
-
-omr.install:
-	@echo ⌛ installing the sheet reader...
-	python3.12 -m venv Omr/.venv
-	Omr/.venv/bin/pip install -q -r Omr/requirements.txt
-	Omr/.venv/bin/homr --init
-	@echo done
-
-omr.run:
-	Omr/.venv/bin/python Omr/server.py
 
 run:
 	@echo ⌛ running development...
