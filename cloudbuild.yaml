@@ -5,8 +5,8 @@ steps:
 
   - id: Check
     name: $_IMAGE
-    entrypoint: yarn
-    args: ['tsx', 'Server/Scripts/registry.ts', 'check', '$_REGISTRY_BUCKET']
+    entrypoint: bash
+    args: ['-c', 'cd /src && node_modules/.bin/tsx Server/Scripts/registry.ts check $_REGISTRY_BUCKET']
 
   - id: Push
     name: gcr.io/cloud-builders/docker
@@ -28,7 +28,7 @@ steps:
   - id: Publish
     name: $_IMAGE
     entrypoint: bash
-    args: ['-c', 'yarn tsx Server/Scripts/registry.ts publish $_REGISTRY_BUCKET "$(cat /workspace/url)/api"']
+    args: ['-c', 'cd /src && node_modules/.bin/tsx Server/Scripts/registry.ts publish $_REGISTRY_BUCKET "$(cat /workspace/url)/api"']
 
 substitutions:
   _AR_HOSTNAME: us-central1-docker.pkg.dev
