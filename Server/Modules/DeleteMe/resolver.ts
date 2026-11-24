@@ -7,7 +7,7 @@ import { PasswordChanges } from 'server/DataSources/MongoDB/PasswordChanges/Mode
 import { PortfolioAccess } from 'server/DataSources/MongoDB/PortfolioAccess/Model.js';
 import { Registrations } from 'server/DataSources/MongoDB/Registrations/Model.js';
 import { Users } from 'server/DataSources/MongoDB/Users/Model.js';
-import { UserTokens } from 'server/DataSources/MongoDB/UserTokens/Model.js';
+import * as session from 'server/Helpers/session.js';
 import { clearAuthCookies } from 'server/Helpers/cookies.js';
 import { forgetOwner } from 'server/DataSources/MongoDB/forgetImageAgentOwner.js';
 import { BadUserInput, Unauthenticated } from 'server/Errors/index.js';
@@ -39,7 +39,7 @@ export default {
        * The tokens go first: if a later step fails, the session has still
        * ended. The user goes last, so they can sign in and try again.
        */
-      await UserTokens.deleteMany({ userGUID });
+      await session.endAll(userGUID);
       await PasswordChanges.deleteMany({ userGUID });
       await Notifications.deleteMany({ ownerGUID: userGUID });
       await PortfolioAccess.deleteMany({ userGUID });

@@ -3,9 +3,3 @@ Anyone can call this field, with or without a session. Every other root field
 needs one, and the gateway refuses it with UNAUTHENTICATED.
 """
 directive @public on FIELD_DEFINITION
-
-"""
-The session must carry one of these sets of scopes. `human` means the session
-passed the Turnstile check; without it the gateway answers CAPTCHA_REQUIRED.
-"""
-directive @requiresScopes(scopes: [[String!]!]!) on FIELD_DEFINITION

@@ -1,12 +1,8 @@
-import jwt from 'jsonwebtoken';
 import { validateApiToken } from 'server/Middleware/apiToken.js';
 import { getApiKeyExpiry } from 'server/Helpers/tokenExpiry.js';
 
 export interface TokenPayload {
   userGUID: string;
-  aud: 'anon' | 'user';
-  /** Passed a Turnstile check when the identity was issued. */
-  human?: boolean;
   iat: number;
   exp: number;
 }
@@ -55,23 +51,5 @@ export function validateApiKey(token: string): boolean {
     return validateApiToken(signatureB64, payload);
   } catch {
     return false;
-  }
-}
-
-/**
- * Verify a JWT and return its payload, or null. Tokens issued before the
- * fields were renamed carry `UserGUID`, which is read as `userGUID` until
- * the last of them expires, 9 days after the rename's release.
- */
-export function verifyToken(token: string | undefined, key: string): TokenPayload | null {
-  if (!token) return null;
-
-  try {
-    const payload = jwt.verify(token, key) as TokenPayload & { UserGUID?: string };
-    const userGUID = payload.userGUID ?? payload.UserGUID;
-
-    return userGUID ? { ...payload, userGUID } : null;
-  } catch {
-    return null;
   }
 }

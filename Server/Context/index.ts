@@ -2,7 +2,6 @@ import type { ExpressContextFunctionArgument } from '@as-integrations/express5';
 import type { Response } from 'express';
 import type { IncomingMessage } from 'node:http';
 import { Users, type IUser } from 'server/DataSources/MongoDB/Users/Model.js';
-import { UserTokens } from 'server/DataSources/MongoDB/UserTokens/Model.js';
 import { createAssetLoaders } from 'server/DataSources/MongoDB/Assets/loaders.js';
 import { createTreeOfLifeLoaders } from 'server/DataSources/MongoDB/TreeOfLife/loaders.js';
 import * as accessTokens from 'server/Helpers/accessTokens.js';
@@ -18,7 +17,7 @@ export interface Context {
   user: AuthenticatedUser | null;
   operationName: string | undefined;
   isWhitelisted: boolean;
-  tokenPayload: Pick<TokenPayload, 'userGUID' | 'aud' | 'human'> | null;
+  tokenPayload: Pick<TokenPayload, 'userGUID'> | null;
   loaders: ReturnType<typeof createLoaders>;
 }
 
@@ -32,7 +31,7 @@ function createLoaders() {
 async function resolveUser(
   tokenPayload: TokenPayload | null,
 ): Promise<AuthenticatedUser | null> {
-  if (tokenPayload?.aud !== 'user') return null;
+  if (!tokenPayload) return null;
 
   const userRecord = await Users.findOne(
     { userGUID: tokenPayload.userGUID, active: true },
@@ -40,9 +39,6 @@ async function resolveUser(
   );
 
   if (!userRecord) return null;
-
-  const tokenRecord = await UserTokens.findOne({ userGUID: tokenPayload.userGUID });
-  if (!tokenRecord) return null;
 
   return {
     userGUID: userRecord.userGUID,

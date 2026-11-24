@@ -5,7 +5,6 @@ import type { Context } from 'server/Context/index.js';
 import { KineticLightReadings } from 'server/DataSources/MongoDB/KineticLightReadings/Model.js';
 import {
   BadUserInput,
-  CaptchaRequired,
   NotFound,
   TooManyRequests,
   Unauthenticated,
@@ -37,14 +36,6 @@ function requireOwner(context: Context): string {
   const owner = context.tokenPayload?.userGUID;
   if (!owner) {
     throw Unauthenticated();
-  }
-  return owner;
-}
-
-function requireHuman(context: Context): string {
-  const owner = requireOwner(context);
-  if (!context.tokenPayload?.human) {
-    throw CaptchaRequired();
   }
   return owner;
 }
@@ -146,7 +137,7 @@ export default {
       args: { file: { name: string; data: string } },
       context: Context,
     ) => {
-      const owner = requireHuman(context);
+      const owner = requireOwner(context);
       const { file } = validate(ReadSchema, args);
       const bytes = Buffer.from(file.data, 'base64');
 
@@ -180,7 +171,7 @@ export default {
       args: { song: { title: string; midi?: string | null; musicxml?: string | null } },
       context: Context,
     ) => {
-      const owner = requireHuman(context);
+      const owner = requireOwner(context);
       const { song } = validate(SaveSchema, args);
       const midi = song.midi ? Buffer.from(song.midi, 'base64') : null;
       const isMusicXml = song.musicxml ? /<score-(?:partwise|timewise)\b/.test(song.musicxml) : false;
@@ -203,7 +194,7 @@ export default {
       return toResult(reading);
     },
     kineticLightArrange: async (_: unknown, args: unknown, context: Context) => {
-      const owner = requireHuman(context);
+      const owner = requireOwner(context);
       const { id, outline } = validate(ArrangeSchema, args);
 
       if (!Types.ObjectId.isValid(id)) {

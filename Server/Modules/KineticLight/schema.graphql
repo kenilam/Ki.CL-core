@@ -202,15 +202,15 @@ type Mutation {
   and answers at once with the reading as READING. KineticLightReadingUpdated
   pushes it when it's done. A caller has one reading at a time.
   """
-  kineticLightRead(file: KineticLightFile!): KineticLightReading! @requiresScopes(scopes: [["human"]])
+  kineticLightRead(file: KineticLightFile!): KineticLightReading!
   """Keeps a MIDI or MusicXML file as a song, so it has a link."""
-  kineticLightSave(song: KineticLightSongInput!): KineticLightReading! @requiresScopes(scopes: [["human"]])
+  kineticLightSave(song: KineticLightSongInput!): KineticLightReading!
   """
   Asks a model to choose how the caller's song starts and to write its drums,
   from an outline the browser made of it. A song is arranged once: one that
   already has an arrangement comes back as it is.
   """
-  kineticLightArrange(id: ID!, outline: KineticLightOutline!): KineticLightReading! @requiresScopes(scopes: [["human"]])
+  kineticLightArrange(id: ID!, outline: KineticLightOutline!): KineticLightReading!
 }
 
 type Subscription {

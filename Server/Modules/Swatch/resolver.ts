@@ -5,7 +5,6 @@ import type { Context } from 'server/Context/index.js';
 import { Swatches } from 'server/DataSources/MongoDB/Swatches/Model.js';
 import {
   BadUserInput,
-  CaptchaRequired,
   TooManyRequests,
   Unauthenticated,
 } from 'server/Errors/index.js';
@@ -29,14 +28,6 @@ function requireOwner(context: Context): string {
   const owner = context.tokenPayload?.userGUID;
   if (!owner) {
     throw Unauthenticated();
-  }
-  return owner;
-}
-
-function requireHuman(context: Context): string {
-  const owner = requireOwner(context);
-  if (!context.tokenPayload?.human) {
-    throw CaptchaRequired();
   }
   return owner;
 }
@@ -122,7 +113,7 @@ export default {
   },
   Mutation: {
     swatchUpload: async (_: unknown, args: unknown, context: Context) => {
-      const owner = requireHuman(context);
+      const owner = requireOwner(context);
 
       await recoverStalled({ startedBy: owner });
       await assertWithinQuota(owner);
@@ -152,7 +143,7 @@ export default {
         return toResult(existing);
       }
 
-      requireHuman(context);
+      requireOwner(context);
 
       return pick(owner, hex, existing?._id ?? null).catch(busyOnDuplicate);
     },

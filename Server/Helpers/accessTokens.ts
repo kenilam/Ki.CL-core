@@ -15,6 +15,7 @@ import type { TokenPayload } from './auth.js';
 import { clearAuthCookies } from './cookies.js';
 
 const ALGORITHM = 'EdDSA';
+const TYPE = 'at+jwt';
 
 interface Keys {
   privateKey: KeyObject;
@@ -42,14 +43,11 @@ export async function jwks(): Promise<{ keys: JWK[] }> {
   return { keys: [jwk] };
 }
 
-export async function sign(
-  payload: Pick<TokenPayload, 'userGUID' | 'aud' | 'human'>,
-  expiresAt: Date,
-): Promise<string> {
+export async function sign(payload: { sub: string }, expiresAt: Date): Promise<string> {
   const { privateKey, jwk } = await load();
 
-  return new SignJWT({ ...payload })
-    .setProtectedHeader({ alg: ALGORITHM, kid: jwk.kid })
+  return new SignJWT(payload)
+    .setProtectedHeader({ alg: ALGORITHM, kid: jwk.kid, typ: TYPE })
     .setIssuedAt()
     .setExpirationTime(expiresAt)
     .sign(privateKey);
@@ -66,9 +64,13 @@ export async function read(
   const { keySet } = await load();
 
   try {
-    const { payload } = await jwtVerify<TokenPayload>(token, keySet, { algorithms: [ALGORITHM] });
+    const { payload } = await jwtVerify<{ sub: string; iat: number; exp: number }>(token, keySet, {
+      algorithms: [ALGORITHM],
+      typ: TYPE,
+      requiredClaims: ['sub', 'iat', 'exp'],
+    });
 
-    return { payload, invalid: false };
+    return { payload: { userGUID: payload.sub, iat: payload.iat, exp: payload.exp }, invalid: false };
   } catch (error) {
     if (error instanceof errors.JWTExpired) {
       return { payload: null, invalid: false };

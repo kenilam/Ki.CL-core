@@ -1311,12 +1311,6 @@ export type PublicDirectiveArgs = { };
 
 export type PublicDirectiveResolver<Result, Parent, ContextType = Context, Args = PublicDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
 
-export type RequiresScopesDirectiveArgs = {
-  scopes: Array<Array<Scalars['String']['input']>>;
-};
-
-export type RequiresScopesDirectiveResolver<Result, Parent, ContextType = Context, Args = RequiresScopesDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
-
 export interface AcceptLanguageScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['AcceptLanguage'], any> {
   name: 'AcceptLanguage';
 }
@@ -1723,5 +1717,4 @@ export type Resolvers<ContextType = Context> = ResolversObject<{
 
 export type DirectiveResolvers<ContextType = Context> = ResolversObject<{
   public?: PublicDirectiveResolver<any, any, ContextType>;
-  requiresScopes?: RequiresScopesDirectiveResolver<any, any, ContextType>;
 }>;

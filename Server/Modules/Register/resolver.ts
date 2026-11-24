@@ -4,8 +4,8 @@ import { RegisterSchema } from './validation.js';
 import { Users } from 'server/DataSources/MongoDB/Users/Model.js';
 import { Registrations } from 'server/DataSources/MongoDB/Registrations/Model.js';
 import { generatePassword } from 'server/DataSources/MongoDB/Utilities/generatePassword.js';
-import { generateUserToken } from 'server/DataSources/MongoDB/UserTokens/generateUserToken.js';
-import { setAccessTokenCookie, setRefreshTokenCookie, setAudCookie, clearApiKeyCookie } from 'server/Helpers/cookies.js';
+import * as session from 'server/Helpers/session.js';
+import { clearApiKeyCookie } from 'server/Helpers/cookies.js';
 import { ExistingRecord } from 'server/Errors/index.js';
 import type { Context } from 'server/Context/index.js';
 import { translate } from 'server/Helpers/translate.js';
@@ -43,14 +43,7 @@ export default {
       // const link = `${process.env.MAILER_REGISTRATION_ACTIVATION_URL}?registrationGUID=${registrationGUID}&secret=${secret}&userGUID=${userGUID}`;
 
       // Issue user JWT (account not yet active, but cookie is set)
-      const { accessToken, refreshToken } = await generateUserToken({
-        userGUID,
-        aud: 'user',
-      });
-
-      setAccessTokenCookie(context.res, accessToken);
-      setRefreshTokenCookie(context.res, refreshToken);
-      setAudCookie(context.res, 'user');
+      await session.start(context.res, userGUID, 'user');
       clearApiKeyCookie(context.res);
 
       return true;
