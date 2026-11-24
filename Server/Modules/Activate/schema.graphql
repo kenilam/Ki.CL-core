@@ -1,5 +1,5 @@
 type Mutation {
-  activate(activate: ActivateInput!): Boolean
+  activate(activate: ActivateInput!): Boolean @public
 }
 
 input ActivateInput {

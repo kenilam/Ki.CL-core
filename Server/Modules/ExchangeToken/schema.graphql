@@ -1,3 +1,3 @@
 type Mutation {
-  exchangeToken: Boolean
+  exchangeToken: Boolean @public
 }

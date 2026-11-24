@@ -24,7 +24,7 @@ extend type Query {
   Runs without a session: the site needs its words before it can start one,
   and they are public.
   """
-  translations(namespaces: [String!]!): [Translation!]!
+  translations(namespaces: [String!]!): [Translation!]! @public
 }
 
 type Subscription {

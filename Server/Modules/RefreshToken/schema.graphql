@@ -1,3 +1,3 @@
 type Mutation {
-  refreshToken: Boolean
+  refreshToken: Boolean @public
 }

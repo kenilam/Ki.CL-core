@@ -4,7 +4,7 @@ enum Provider {
 }
 
 type Mutation {
-  socialSignIn(socialSignIn: SocialSignInInput!): Boolean
+  socialSignIn(socialSignIn: SocialSignInInput!): Boolean @public
 }
 
 input SocialSignInInput {
