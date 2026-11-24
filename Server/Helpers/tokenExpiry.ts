@@ -1,9 +1,11 @@
 /**
  * Token expiry logic:
- * - Access token expires at next midnight (00:00)
- * - If created/refreshed at or after 11:45 PM, expires day-after-tomorrow at 00:00
+ * - Access token expires 15 minutes after it is issued
+ * - x-api-key expires at next midnight (00:00), or day-after-tomorrow if issued at or after 11:45 PM
  * - Refresh token expires on the 8th day at midnight (same 11:45 PM grace rule)
  */
+
+const ACCESS_TOKEN_MS = 15 * 60 * 1000;
 
 const GRACE_MINUTES = 15; // 11:45 PM = 23:45 = 60 - 15 minutes before midnight
 
@@ -22,6 +24,10 @@ function isAfterGracePeriod(date: Date): boolean {
 }
 
 export function getAccessTokenExpiry(now: Date = new Date()): Date {
+  return new Date(now.getTime() + ACCESS_TOKEN_MS);
+}
+
+export function getApiKeyExpiry(now: Date = new Date()): Date {
   const midnight = getNextMidnight(now);
 
   if (isAfterGracePeriod(now)) {

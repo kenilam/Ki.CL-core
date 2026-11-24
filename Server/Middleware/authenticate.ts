@@ -6,11 +6,8 @@ import {
   isIntrospectionRequest,
   OPERATION_PREFIX,
 } from 'server/Helpers/graphqlOperations.js';
-import {
-  validateApiKey,
-  verifyAccessToken,
-  type TokenPayload,
-} from 'server/Helpers/auth.js';
+import * as accessTokens from 'server/Helpers/accessTokens.js';
+import { validateApiKey, type TokenPayload } from 'server/Helpers/auth.js';
 
 declare global {
   namespace Express {
@@ -20,7 +17,7 @@ declare global {
   }
 }
 
-export function authenticate(req: Request, res: Response, next: NextFunction): void {
+export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
   // Allow GET requests through (Playground HTML page)
   if (req.method === 'GET') {
     next();
@@ -78,7 +75,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
     return;
   }
 
-  const decoded = verifyAccessToken(req.cookies?.access_token);
+  const { payload: decoded } = await accessTokens.read(req.cookies?.access_token, res);
 
   // Quotas are counted per session, so one is required to run anything.
   if (!decoded) {

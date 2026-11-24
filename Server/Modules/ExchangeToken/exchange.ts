@@ -4,6 +4,7 @@ import { generateUserToken } from 'server/DataSources/MongoDB/UserTokens/generat
 import { setAccessTokenCookie, setRefreshTokenCookie, setAudCookie } from 'server/Helpers/cookies.js';
 import type { Context } from 'server/Context/index.js';
 import { CaptchaRequired, Unavailable } from 'server/Errors/index.js';
+import * as accessTokens from 'server/Helpers/accessTokens.js';
 import { parseCookies, verifyToken, type TokenPayload } from 'server/Helpers/auth.js';
 import { turnstileToken, verifyTurnstile } from 'server/Helpers/turnstile.js';
 import { translate } from 'server/Helpers/translate.js';
@@ -68,7 +69,8 @@ export async function exchangeToken(context: Pick<Context, 'headers' | 'res'>): 
    * A user's session also needs its stored token, which signing out or
    * revoking deletes. Without it the signed cookies don't count.
    */
-  const verified = verify(cookies.access_token, process.env.JWT_ACCESS_TOKEN_PRIVATE_KEY!);
+  const { payload, invalid } = await accessTokens.read(cookies.access_token, context.res);
+  const verified: Identity | null = payload && { userGUID: payload.userGUID, aud: payload.aud, human: payload.human };
   const current =
     verified?.aud === 'user' && !(await UserTokens.exists({ userGUID: verified.userGUID }))
       ? null
@@ -96,7 +98,7 @@ export async function exchangeToken(context: Pick<Context, 'headers' | 'res'>): 
    * user stays signed in, as long as their refresh token is the one stored
    * for them; a revoked one falls through to a new anonymous session.
    */
-  const refreshed = verify(cookies.refresh_token, process.env.JWT_REFRESH_TOKEN_PRIVATE_KEY!);
+  const refreshed = invalid ? null : verify(cookies.refresh_token, process.env.JWT_REFRESH_TOKEN_PRIVATE_KEY!);
   const renewable =
     refreshed?.aud === 'anon' ||
     (refreshed?.aud === 'user' && Boolean(await UserTokens.exists({ token: cookies.refresh_token })));

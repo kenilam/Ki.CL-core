@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { UserTokens } from './Model.js';
+import * as accessTokens from 'server/Helpers/accessTokens.js';
 import type { TokenPayload } from 'server/Helpers/auth.js';
 import { getAccessTokenExpiry, getRefreshTokenExpiry, secondsUntil } from 'server/Helpers/tokenExpiry.js';
 
@@ -21,7 +22,6 @@ export async function generateUserToken(
   const accessExpiry = getAccessTokenExpiry(now);
   const refreshExpiry = getRefreshTokenExpiry(now);
 
-  const accessExpiresIn = secondsUntil(accessExpiry, now);
   const refreshExpiresIn = secondsUntil(refreshExpiry, now);
 
   const payload = {
@@ -30,11 +30,7 @@ export async function generateUserToken(
     ...(props.human ? { human: true } : {}),
   };
 
-  const accessToken = jwt.sign(
-    payload,
-    process.env.JWT_ACCESS_TOKEN_PRIVATE_KEY!,
-    { expiresIn: accessExpiresIn },
-  );
+  const accessToken = await accessTokens.sign(payload, accessExpiry);
 
   const refreshToken = jwt.sign(
     payload,

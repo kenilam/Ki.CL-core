@@ -31,6 +31,11 @@ start:
 	yarn install && yarn run start
 	@echo ✅ done
 
+# A new Ed25519 key for JWT_SIGNING_KEY, printed as PKCS#8 PEM. Pipe it into
+# Secret Manager rather than the terminal: make jwt.key | gcloud secrets versions add jwt-signing-key --data-file=-
+jwt.key:
+	@node -e "process.stdout.write(require('node:crypto').generateKeyPairSync('ed25519').privateKey.export({ type: 'pkcs8', format: 'pem' }))"
+
 # Portfolio access: make portfolio.grant PIECE=moonshot EMAIL=someone@example.com
 # MONGODB_DATABASE=production picks the production database.
 portfolio.grant:

@@ -5,7 +5,8 @@ import { Users, type IUser } from 'server/DataSources/MongoDB/Users/Model.js';
 import { UserTokens } from 'server/DataSources/MongoDB/UserTokens/Model.js';
 import { createAssetLoaders } from 'server/DataSources/MongoDB/Assets/loaders.js';
 import { createTreeOfLifeLoaders } from 'server/DataSources/MongoDB/TreeOfLife/loaders.js';
-import { verifyAccessToken, type TokenPayload } from 'server/Helpers/auth.js';
+import * as accessTokens from 'server/Helpers/accessTokens.js';
+import type { TokenPayload } from 'server/Helpers/auth.js';
 import { readWsCredentials } from 'server/Helpers/wsAuthorize.js';
 
 export type AuthenticatedUser = Pick<IUser, 'userGUID' | 'email' | 'active'>;
@@ -62,7 +63,7 @@ export async function createContext({ req, res }: ExpressContextFunctionArgument
    * here too, the way the WebSocket context already does.
    */
   const tokenPayload =
-    req.tokenPayload || verifyAccessToken(req.cookies?.access_token) || null;
+    req.tokenPayload || (await accessTokens.read(req.cookies?.access_token, res as unknown as Response)).payload;
 
   const isWhitelisted = !tokenPayload;
 
@@ -91,7 +92,7 @@ export async function createWsContext(args: {
 
   const { accessToken, cookieHeader } = readWsCredentials({ connectionParams, request });
 
-  const tokenPayload = verifyAccessToken(accessToken);
+  const { payload: tokenPayload } = await accessTokens.read(accessToken, null);
   const user = await resolveUser(tokenPayload);
 
   const headers: Record<string, string | string[] | undefined> = {

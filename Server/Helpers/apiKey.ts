@@ -1,7 +1,7 @@
 import type { Response } from 'express';
 import { sign as cryptoSign } from 'node:crypto';
 import { getPrivateKey } from './certs.js';
-import { getAccessTokenExpiry } from './tokenExpiry.js';
+import { getApiKeyExpiry } from './tokenExpiry.js';
 
 /**
  * Get milliseconds until next midnight.
@@ -9,7 +9,7 @@ import { getAccessTokenExpiry } from './tokenExpiry.js';
  */
 export function msUntilMidnight(): number {
   const now = new Date();
-  return getAccessTokenExpiry(now).getTime() - now.getTime();
+  return getApiKeyExpiry(now).getTime() - now.getTime();
 }
 
 /**
