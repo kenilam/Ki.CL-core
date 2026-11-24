@@ -2,8 +2,8 @@ import bcrypt from 'bcrypt';
 import { validate } from 'server/Helpers/Validation/validate.js';
 import { SignInSchema } from './validation.js';
 import { Users } from 'server/DataSources/MongoDB/Users/Model.js';
-import { generateUserToken } from 'server/DataSources/MongoDB/UserTokens/generateUserToken.js';
-import { setAccessTokenCookie, setRefreshTokenCookie, setAudCookie, clearApiKeyCookie } from 'server/Helpers/cookies.js';
+import * as session from 'server/Helpers/session.js';
+import { clearApiKeyCookie } from 'server/Helpers/cookies.js';
 import { BadUserInput, Forbidden } from 'server/Errors/index.js';
 import type { Context } from 'server/Context/index.js';
 import { translate } from 'server/Helpers/translate.js';
@@ -31,14 +31,7 @@ export default {
         throw BadUserInput(translate('api', 'error_credentials'));
       }
 
-      const { accessToken, refreshToken } = await generateUserToken({
-        userGUID: user.userGUID,
-        aud: 'user',
-      });
-
-      setAccessTokenCookie(context.res, accessToken);
-      setRefreshTokenCookie(context.res, refreshToken);
-      setAudCookie(context.res, 'user');
+      await session.start(context.res, user.userGUID, 'user');
       clearApiKeyCookie(context.res);
 
       return true;

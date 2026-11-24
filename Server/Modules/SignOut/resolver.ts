@@ -1,13 +1,12 @@
-import { UserTokens } from 'server/DataSources/MongoDB/UserTokens/Model.js';
 import { clearAuthCookies } from 'server/Helpers/cookies.js';
 import type { Context } from 'server/Context/index.js';
+import { parseCookies } from 'server/Helpers/auth.js';
+import * as session from 'server/Helpers/session.js';
 
 export default {
   Mutation: {
     signOut: async (_: unknown, __: unknown, context: Context) => {
-      if (context.tokenPayload?.aud === 'user') {
-        await UserTokens.deleteOne({ userGUID: context.tokenPayload.userGUID });
-      }
+      await session.end(parseCookies(context.headers['cookie'] as string | undefined).refresh_token);
 
       clearAuthCookies(context.res);
 

@@ -133,13 +133,13 @@ type Mutation {
   MAKING. Refused before the picture is read once the caller's allowance is
   used up. The picture itself isn't kept.
   """
-  swatchUpload(file: SwatchFile!): Swatch! @requiresScopes(scopes: [["human"]])
+  swatchUpload(file: SwatchFile!): Swatch!
   """
   The swatch for a colour, `#RRGGBB`. A colour that already has one, or is
   having one made, comes back as it is and costs nothing. Otherwise one is
   started, counted against the caller's allowance, and kept for everyone.
   """
-  swatchPick(hex: String!): Swatch! @requiresScopes(scopes: [["human"]])
+  swatchPick(hex: String!): Swatch!
 }
 
 type Subscription {

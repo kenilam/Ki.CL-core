@@ -3,7 +3,7 @@ import { validate } from 'server/Helpers/Validation/validate.js';
 import { ContactSchema } from './validation.js';
 import { ContactMessages } from 'server/DataSources/MongoDB/ContactMessages/Model.js';
 import { Gmail } from 'server/DataSources/Google/index.js';
-import { CaptchaRequired, Unauthenticated, Unavailable } from 'server/Errors/index.js';
+import { Unauthenticated, Unavailable } from 'server/Errors/index.js';
 import type { Context } from 'server/Context/index.js';
 import { assertWithinQuota, retentionMs } from './quota.js';
 import { translate } from 'server/Helpers/translate.js';
@@ -29,11 +29,6 @@ export default {
 
       if (!userGUID) {
         throw Unauthenticated();
-      }
-
-      // Each message sends two emails, so a session that has not passed Turnstile sends none.
-      if (!context.tokenPayload?.human) {
-        throw CaptchaRequired();
       }
 
       const { email, message } = validate(ContactSchema, args.contact);

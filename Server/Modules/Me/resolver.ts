@@ -10,8 +10,7 @@ export default {
         throw Unauthenticated();
       }
 
-      // Anonymous tokens get minimal info
-      if (context.tokenPayload.aud === 'anon') {
+      if (!context.user) {
         return {
           userGUID: context.tokenPayload.userGUID,
           email: null,
@@ -23,16 +22,6 @@ export default {
         };
       }
 
-      /*
-       * A signed JWT isn't enough for a user: `context.user` also needs their
-       * stored token, which signing out or revoking deletes. Without it the
-       * access token would keep working until it expires at midnight.
-       */
-      if (!context.user) {
-        throw Unauthenticated(translate('api', 'error_session_ended'));
-      }
-
-      // Authenticated users get their own profile
       const user = await Users.findOne(
         { userGUID: context.tokenPayload.userGUID, active: true },
         'userGUID email firstName lastName avatar active',

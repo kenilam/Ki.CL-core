@@ -3,7 +3,7 @@ import { Types } from 'mongoose';
 
 import type { Context } from 'server/Context/index.js';
 import { ImageAgentThreads } from 'server/DataSources/MongoDB/ImageAgentThreads/Model.js';
-import { BadUserInput, CaptchaRequired, NotFound, Unauthenticated } from 'server/Errors/index.js';
+import { BadUserInput, NotFound, Unauthenticated } from 'server/Errors/index.js';
 import { translate } from 'server/Helpers/translate.js';
 import { startingWith } from 'server/Helpers/startingWith.js';
 import { validate } from 'server/Helpers/Validation/validate.js';
@@ -39,19 +39,6 @@ function requireOwner(context: Context): string {
   const owner = context.tokenPayload?.userGUID;
   if (!owner) {
     throw Unauthenticated();
-  }
-  return owner;
-}
-
-/**
- * The owner of a session that passed the Turnstile check. Sending costs
- * money, so a session issued while the check could not run is sent back to
- * ExchangeToken to pass it.
- */
-function requireHuman(context: Context): string {
-  const owner = requireOwner(context);
-  if (!context.tokenPayload?.human) {
-    throw CaptchaRequired();
   }
   return owner;
 }
@@ -121,7 +108,7 @@ export default {
       args: { threadId?: string | null; text: string },
       context: Context,
     ): Promise<ImageAgentThreadResult> => {
-      const owner = requireHuman(context);
+      const owner = requireOwner(context);
       const input = validate(SendSchema, args);
       const text = normalisePrompt(input.text);
 
@@ -192,7 +179,7 @@ export default {
       args: { threadId: string; messageId?: string | null },
       context: Context,
     ): Promise<ImageAgentThreadResult> => {
-      const owner = requireHuman(context);
+      const owner = requireOwner(context);
       const { id } = validate(ThreadSchema, { id: args.threadId });
 
       await recoverStalled({ ownerGUID: owner });

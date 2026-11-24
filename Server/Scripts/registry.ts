@@ -42,7 +42,7 @@ interface ServiceRecord {
 }
 
 const LINKS = `extend schema
-  @link(url: "https://specs.apollo.dev/federation/v2.7", import: ["@requiresScopes", "@composeDirective"])
+  @link(url: "https://specs.apollo.dev/federation/v2.7", import: ["@composeDirective"])
   @link(url: "https://ki-cl.com/auth/v1.0", import: ["@public"])
   @composeDirective(name: "@public")`;
 

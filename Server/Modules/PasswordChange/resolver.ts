@@ -9,8 +9,7 @@ import {
 import { PasswordChanges } from 'server/DataSources/MongoDB/PasswordChanges/Model.js';
 import { Users } from 'server/DataSources/MongoDB/Users/Model.js';
 import { generatePassword } from 'server/DataSources/MongoDB/Utilities/generatePassword.js';
-import { generateUserToken } from 'server/DataSources/MongoDB/UserTokens/generateUserToken.js';
-import { setAccessTokenCookie, setRefreshTokenCookie, setAudCookie } from 'server/Helpers/cookies.js';
+import * as session from 'server/Helpers/session.js';
 import { Gmail } from 'server/DataSources/Google/index.js';
 import { BadUserInput, TooManyRequests, Unauthenticated, Unavailable } from 'server/Errors/index.js';
 import type { Context } from 'server/Context/index.js';
@@ -178,15 +177,7 @@ export default {
       }
 
       // New tokens replace the stored refresh token, so a session on another device can't renew.
-      const { accessToken, refreshToken } = await generateUserToken({
-        userGUID,
-        aud: 'user',
-        human: context.tokenPayload?.human,
-      });
-
-      setAccessTokenCookie(context.res, accessToken);
-      setRefreshTokenCookie(context.res, refreshToken);
-      setAudCookie(context.res, 'user');
+      await session.start(context.res, userGUID, 'user');
 
       // The password has changed either way, so a failed notice doesn't fail the request.
       await Gmail.send({
