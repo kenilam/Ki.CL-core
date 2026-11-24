@@ -7,7 +7,8 @@ import {
 } from 'graphql';
 
 import { Unauthenticated } from 'server/Errors/index.js';
-import { parseCookies, validateApiKey, verifyAccessToken } from './auth.js';
+import * as accessTokens from './accessTokens.js';
+import { parseCookies, validateApiKey } from './auth.js';
 import {
   isAuthOperation,
   isIntrospectionRequest,
@@ -78,10 +79,10 @@ export const wsValidate: typeof graphqlValidate = (schema, documentAST, rules, o
  * prefix and a session, the same requirement HTTP enforces. Returns the errors
  * to reject with, or null to allow.
  */
-export function authorizeWsOperation(
+export async function authorizeWsOperation(
   credentials: WsCredentials,
   payload: { operationName?: string | null; query?: string },
-): readonly GraphQLError[] | null {
+): Promise<readonly GraphQLError[] | null> {
   if (isIntrospectionRequest(payload)) return null;
 
   const { operationName } = payload;
@@ -93,5 +94,5 @@ export function authorizeWsOperation(
     return credentials.apiKey && validateApiKey(credentials.apiKey) ? null : [Unauthenticated()];
   }
 
-  return verifyAccessToken(credentials.accessToken) ? null : [Unauthenticated()];
+  return (await accessTokens.read(credentials.accessToken, null)).payload ? null : [Unauthenticated()];
 }

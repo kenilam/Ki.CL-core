@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { validateApiToken } from 'server/Middleware/apiToken.js';
-import { getAccessTokenExpiry } from 'server/Helpers/tokenExpiry.js';
+import { getApiKeyExpiry } from 'server/Helpers/tokenExpiry.js';
 
 export interface TokenPayload {
   userGUID: string;
@@ -32,7 +32,7 @@ export function parseCookies(cookieHeader: string | undefined): Record<string, s
  * Check if a timestamp (ms) is expired (past midnight boundary).
  */
 function isApiKeyExpired(timestamp: number): boolean {
-  return new Date() >= getAccessTokenExpiry(new Date(timestamp));
+  return new Date() >= getApiKeyExpiry(new Date(timestamp));
 }
 
 /**
@@ -74,11 +74,4 @@ export function verifyToken(token: string | undefined, key: string): TokenPayloa
   } catch {
     return null;
   }
-}
-
-/**
- * Verify an access_token JWT. Returns payload or null.
- */
-export function verifyAccessToken(token: string | undefined): TokenPayload | null {
-  return verifyToken(token, process.env.JWT_ACCESS_TOKEN_PRIVATE_KEY!);
 }

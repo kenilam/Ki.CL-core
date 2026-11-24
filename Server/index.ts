@@ -28,6 +28,7 @@ import { runSwatchTask } from './Modules/Swatch/task.js';
 import { runTaxonVisualTask } from './Modules/TaxonVisual/task.js';
 import { loadTranslations } from 'server/DataSources/MongoDB/translationsCache.js';
 import { createGoogleStorageAssetHandler } from './DataSources/Google/Storage/assetHandler.js';
+import * as accessTokens from './Helpers/accessTokens.js';
 import { loadCerts } from './Helpers/certs.js';
 import {
   authorizeWsOperation,
@@ -73,11 +74,11 @@ const wsServerOptions: ServerOptions<ConnectionInitMessage['payload'], Extra> = 
   schema,
   context: wsContext,
   validate: wsValidate,
-  onSubscribe: (ctx, _id, payload) =>
-    authorizeWsOperation(
+  onSubscribe: async (ctx, _id, payload) =>
+    (await authorizeWsOperation(
       readWsCredentials({ connectionParams: ctx.connectionParams, request: ctx.extra.request }),
       payload,
-    ) ?? undefined,
+    )) ?? undefined,
 };
 
 const graphqlWsCleanup = useServer(wsServerOptions, graphqlWss);
@@ -140,6 +141,10 @@ async function start() {
     }
 
     res.status(503).json({ status: 'unavailable' });
+  });
+
+  app.get('/.well-known/jwks.json', async (_req, res) => {
+    res.set('Cache-Control', 'public, max-age=300').json(await accessTokens.jwks());
   });
 
   // GCS assets - stream via service account (bucket is private; anonymous proxy 403s)
