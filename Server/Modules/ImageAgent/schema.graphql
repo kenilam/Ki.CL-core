@@ -137,13 +137,13 @@ type Mutation {
   given. Returns as soon as the message is recorded; the reply arrives on
   ImageAgentThreadUpdated.
   """
-  imageAgentSend(threadId: ID, text: String!): ImageAgentThread!
+  imageAgentSend(threadId: ID, text: String!): ImageAgentThread! @requiresScopes(scopes: [["human"]])
   """
   Go back to one of the person's messages and ask it again. Everything from
   that message on leaves the conversation, and the message is sent again.
   Without `messageId`, the person's last message.
   """
-  imageAgentRetry(threadId: ID!, messageId: ID): ImageAgentThread!
+  imageAgentRetry(threadId: ID!, messageId: ID): ImageAgentThread! @requiresScopes(scopes: [["human"]])
 }
 
 type Subscription {

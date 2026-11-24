@@ -1,5 +1,5 @@
 type Mutation {
-  signIn(signIn: SignInInput!): Boolean
+  signIn(signIn: SignInInput!): Boolean @public
 }
 
 input SignInInput {

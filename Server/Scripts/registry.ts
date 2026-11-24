@@ -1,13 +1,16 @@
 /**
  * Keeps this service's record in the schema registry, the bucket the gateway
  * builds the supergraph from. Each service owns one record,
- * `services/<name>.json`: its name, its URL, its schema and, for a service
- * with a page, the path the host mounts it at.
+ * `services/<name>.json`: its name, its URL, its schema, the path the host
+ * mounts it at for a service with a page, and the path of its JWKS for the
+ * service that signs access tokens.
  *
  * Run:
- *   npx tsx Server/Scripts/registry.ts sdl
+ *   npx tsx Server/Scripts/registry.ts record <url>
  *   npx tsx Server/Scripts/registry.ts check <bucket>
  *   npx tsx Server/Scripts/registry.ts publish <bucket> <url>
+ *
+ * record: prints the record for a service at <url>, for a local registry.
  *
  * check: composes this schema with every other published record, and fails
  * on a composition error or a root field without the service's prefix. Cloud
@@ -24,8 +27,9 @@ import { typeDefs } from 'server/TypeDefs.js';
 const NAME = 'core';
 const PREFIX = '';
 const MOUNT: string | undefined = undefined;
+const JWKS: string | undefined = '/.well-known/jwks.json';
 
-const USAGE = 'Usage: registry.ts sdl | check <bucket> | publish <bucket> <url>';
+const USAGE = 'Usage: registry.ts record <url> | check <bucket> | publish <bucket> <url>';
 const FOLDER = 'services/';
 const ROOT_TYPES = ['Query', 'Mutation', 'Subscription'];
 
@@ -34,9 +38,19 @@ interface ServiceRecord {
   url: string;
   sdl: string;
   mount?: string;
+  jwks?: string;
 }
 
-const sdl = `extend schema @link(url: "https://specs.apollo.dev/federation/v2.7", import: [])\n\n${print(typeDefs)}`;
+const LINKS = `extend schema
+  @link(url: "https://specs.apollo.dev/federation/v2.7", import: ["@requiresScopes", "@composeDirective"])
+  @link(url: "https://ki-cl.com/auth/v1.0", import: ["@public"])
+  @composeDirective(name: "@public")`;
+
+const sdl = `${LINKS}\n\n${print(typeDefs)}`;
+
+function record(url: string): ServiceRecord {
+  return { name: NAME, url, sdl, ...(MOUNT ? { mount: MOUNT } : {}), ...(JWKS ? { jwks: JWKS } : {}) };
+}
 
 function unprefixedRootFields(): string[] {
   if (!PREFIX) {
@@ -92,20 +106,19 @@ async function check(bucket: string): Promise<void> {
 }
 
 async function publish(bucket: string, url: string): Promise<void> {
-  const record: ServiceRecord = { name: NAME, url, sdl, ...(MOUNT ? { mount: MOUNT } : {}) };
-
   await new Storage()
     .bucket(bucket)
     .file(`${FOLDER}${NAME}.json`)
-    .save(JSON.stringify(record, null, 2), { contentType: 'application/json' });
+    .save(JSON.stringify(record(url), null, 2), { contentType: 'application/json' });
 
   console.log(`Published ${NAME} at ${url} to gs://${bucket}/${FOLDER}${NAME}.json.`);
 }
 
-const [command, bucket, url] = process.argv.slice(2);
+const [command, ...args] = process.argv.slice(2);
+const [bucket, url] = args;
 
-if (command === 'sdl') {
-  console.log(sdl);
+if (command === 'record' && args[0]) {
+  console.log(JSON.stringify(record(args[0]), null, 2));
 } else if (command === 'check' && bucket) {
   await check(bucket);
 } else if (command === 'publish' && bucket && url) {

@@ -1,5 +1,5 @@
 type Mutation {
-  register(register: RegisterInput!): Boolean
+  register(register: RegisterInput!): Boolean @public
 }
 
 input RegisterInput {
