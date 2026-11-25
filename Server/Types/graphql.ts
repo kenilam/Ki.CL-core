@@ -16,7 +16,6 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
-  AcceptLanguage: { input: string; output: string; }
   DateTime: { input: DateTime; output: DateTime; }
   EmailAddress: { input: EmailAddress; output: EmailAddress; }
   JSONObject: { input: Record<string, string | number>; output: Record<string, string | number>; }
@@ -24,16 +23,6 @@ export type Scalars = {
   NonEmptyString: { input: NonEmptyString; output: NonEmptyString; }
   URL: { input: URL; output: URL; }
   UUID: { input: UUID; output: UUID; }
-};
-
-/** Whether a language can be shown yet. */
-export type AcceptLanguageStatus = {
-  __typename?: 'AcceptLanguageStatus';
-  acceptLanguage: Scalars['AcceptLanguage']['output'];
-  /** Every `en-US` string is in this language. Only a complete language can be picked or answered in. */
-  complete: Scalars['Boolean']['output'];
-  /** `make translations.translate` is working on this language now. */
-  translating: Scalars['Boolean']['output'];
 };
 
 export type ActivateInput = {
@@ -672,15 +661,6 @@ export type Query = {
   taxonSearch: Array<TaxonSearchResult>;
   taxonVisual: TaxonVisual;
   /**
-   * Every string of the namespaces asked for. Each comes from the first language
-   * that has it: the request's Accept-Language header in its q order, then
-   * `en-US`. A namespace that doesn't exist adds nothing to the answer.
-   *
-   * Runs without a session: the site needs its words before it can start one,
-   * and they are public.
-   */
-  translations: Array<Translation>;
-  /**
    * Subtree from Open Tree of Life (cached in Mongo).
    * `ottId` defaults to 93302 (cellular organisms). `heightLimit` max 3.
    * Warm Mongo rows skip OTOL (known leaf or existing child edges).
@@ -749,11 +729,6 @@ export type QueryTaxonVisualArgs = {
 };
 
 
-export type QueryTranslationsArgs = {
-  namespaces: Array<Scalars['String']['input']>;
-};
-
-
 export type QueryTreeOfLifeSubtreeArgs = {
   heightLimit?: InputMaybe<Scalars['Int']['input']>;
   nodeId?: InputMaybe<Scalars['String']['input']>;
@@ -786,8 +761,6 @@ export type SocialSignInInput = {
 
 export type Subscription = {
   __typename?: 'Subscription';
-  /** Every language's status now, and again whenever one changes. */
-  acceptLanguagesUpdated: Array<AcceptLanguageStatus>;
   /** Pushes the whole conversation on every change. */
   imageAgentThreadUpdated: ImageAgentThread;
   /** Pushes each of the caller's readings as it fills in and when it finishes. */
@@ -1003,15 +976,6 @@ export enum TaxonVisualStatus {
   Ready = 'READY'
 }
 
-/** One string of the site's writing. */
-export type Translation = {
-  __typename?: 'Translation';
-  /** The string's path in its namespace, joined with dots: `account.signOut`. */
-  field: Scalars['String']['output'];
-  namespace: Scalars['String']['output'];
-  value: Scalars['String']['output'];
-};
-
 /**
  * Flat OTOL + studio node. Tree edges are nodeId-only, parent-pointer style:
  * `ancestor` ← the node's own ancestorNodeId (shallow stitch by DataLoader),
@@ -1120,8 +1084,6 @@ export type DirectiveResolverFn<TResult = Record<PropertyKey, never>, TParent = 
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = ResolversObject<{
-  AcceptLanguage: ResolverTypeWrapper<Scalars['AcceptLanguage']['output']>;
-  AcceptLanguageStatus: ResolverTypeWrapper<AcceptLanguageStatus>;
   ActivateInput: ActivateInput;
   Asset: ResolverTypeWrapper<Asset>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
@@ -1194,7 +1156,6 @@ export type ResolversTypes = ResolversObject<{
   TaxonVisualExhaustion: TaxonVisualExhaustion;
   TaxonVisualScore: ResolverTypeWrapper<TaxonVisualScore>;
   TaxonVisualStatus: TaxonVisualStatus;
-  Translation: ResolverTypeWrapper<Translation>;
   TreeOfLifeNode: ResolverTypeWrapper<TreeOfLifeNode>;
   URL: ResolverTypeWrapper<Scalars['URL']['output']>;
   UUID: ResolverTypeWrapper<Scalars['UUID']['output']>;
@@ -1203,8 +1164,6 @@ export type ResolversTypes = ResolversObject<{
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = ResolversObject<{
-  AcceptLanguage: Scalars['AcceptLanguage']['output'];
-  AcceptLanguageStatus: AcceptLanguageStatus;
   ActivateInput: ActivateInput;
   Asset: Asset;
   Boolean: Scalars['Boolean']['output'];
@@ -1256,7 +1215,6 @@ export type ResolversParentTypes = ResolversObject<{
   TaxonSearchResult: TaxonSearchResult;
   TaxonVisual: TaxonVisual;
   TaxonVisualScore: TaxonVisualScore;
-  Translation: Translation;
   TreeOfLifeNode: TreeOfLifeNode;
   URL: Scalars['URL']['output'];
   UUID: Scalars['UUID']['output'];
@@ -1266,16 +1224,6 @@ export type ResolversParentTypes = ResolversObject<{
 export type PublicDirectiveArgs = { };
 
 export type PublicDirectiveResolver<Result, Parent, ContextType = Context, Args = PublicDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
-
-export interface AcceptLanguageScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['AcceptLanguage'], any> {
-  name: 'AcceptLanguage';
-}
-
-export type AcceptLanguageStatusResolvers<ContextType = Context, ParentType extends ResolversParentTypes['AcceptLanguageStatus'] = ResolversParentTypes['AcceptLanguageStatus']> = ResolversObject<{
-  acceptLanguage?: Resolver<ResolversTypes['AcceptLanguage'], ParentType, ContextType>;
-  complete?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  translating?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-}>;
 
 export type AssetResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Asset'] = ResolversParentTypes['Asset']> = ResolversObject<{
   generator?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -1507,13 +1455,11 @@ export type QueryResolvers<ContextType = Context, ParentType extends ResolversPa
   swatches?: Resolver<Array<ResolversTypes['Swatch']>, ParentType, ContextType>;
   taxonSearch?: Resolver<Array<ResolversTypes['TaxonSearchResult']>, ParentType, ContextType, RequireFields<QueryTaxonSearchArgs, 'limit' | 'query'>>;
   taxonVisual?: Resolver<ResolversTypes['TaxonVisual'], ParentType, ContextType, RequireFields<QueryTaxonVisualArgs, 'name' | 'ottId'>>;
-  translations?: Resolver<Array<ResolversTypes['Translation']>, ParentType, ContextType, RequireFields<QueryTranslationsArgs, 'namespaces'>>;
   treeOfLifeSubtree?: Resolver<Maybe<ResolversTypes['TreeOfLifeNode']>, ParentType, ContextType, RequireFields<QueryTreeOfLifeSubtreeArgs, 'heightLimit'>>;
   treeOfLifeSubtrees?: Resolver<Array<Maybe<ResolversTypes['TreeOfLifeNode']>>, ParentType, ContextType, RequireFields<QueryTreeOfLifeSubtreesArgs, 'heightLimit'>>;
 }>;
 
 export type SubscriptionResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Subscription'] = ResolversParentTypes['Subscription']> = ResolversObject<{
-  acceptLanguagesUpdated?: SubscriptionResolver<Array<ResolversTypes['AcceptLanguageStatus']>, "acceptLanguagesUpdated", ParentType, ContextType>;
   imageAgentThreadUpdated?: SubscriptionResolver<ResolversTypes['ImageAgentThread'], "imageAgentThreadUpdated", ParentType, ContextType, RequireFields<SubscriptionImageAgentThreadUpdatedArgs, 'id'>>;
   kineticLightReadingUpdated?: SubscriptionResolver<ResolversTypes['KineticLightReading'], "kineticLightReadingUpdated", ParentType, ContextType>;
   passwordChangeUpdated?: SubscriptionResolver<ResolversTypes['PasswordChange'], "passwordChangeUpdated", ParentType, ContextType, RequireFields<SubscriptionPasswordChangeUpdatedArgs, 'id'>>;
@@ -1578,12 +1524,6 @@ export type TaxonVisualScoreResolvers<ContextType = Context, ParentType extends 
   taxonMatch?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
 }>;
 
-export type TranslationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Translation'] = ResolversParentTypes['Translation']> = ResolversObject<{
-  field?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  namespace?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  value?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-}>;
-
 export type TreeOfLifeNodeResolvers<ContextType = Context, ParentType extends ResolversParentTypes['TreeOfLifeNode'] = ResolversParentTypes['TreeOfLifeNode']> = ResolversObject<{
   ancestor?: Resolver<Maybe<ResolversTypes['TreeOfLifeNode']>, ParentType, ContextType>;
   asset?: Resolver<Maybe<ResolversTypes['Asset']>, ParentType, ContextType>;
@@ -1608,8 +1548,6 @@ export interface UuidScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes
 }
 
 export type Resolvers<ContextType = Context> = ResolversObject<{
-  AcceptLanguage?: GraphQLScalarType;
-  AcceptLanguageStatus?: AcceptLanguageStatusResolvers<ContextType>;
   Asset?: AssetResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
   EmailAddress?: GraphQLScalarType;
@@ -1643,7 +1581,6 @@ export type Resolvers<ContextType = Context> = ResolversObject<{
   TaxonSearchResult?: TaxonSearchResultResolvers<ContextType>;
   TaxonVisual?: TaxonVisualResolvers<ContextType>;
   TaxonVisualScore?: TaxonVisualScoreResolvers<ContextType>;
-  Translation?: TranslationResolvers<ContextType>;
   TreeOfLifeNode?: TreeOfLifeNodeResolvers<ContextType>;
   URL?: GraphQLScalarType;
   UUID?: GraphQLScalarType;
