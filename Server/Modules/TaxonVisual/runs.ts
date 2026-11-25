@@ -3,7 +3,7 @@ import { Types } from 'mongoose';
 import { ProviderLimitError } from 'server/DataSources/AI/providerLimitError.js';
 import { releasePlate } from 'server/DataSources/MongoDB/TreeOfLife/claim.js';
 import { TreeOfLifeNodes } from 'server/DataSources/MongoDB/TreeOfLife/Model.js';
-import { settlePlate } from 'server/DataSources/MongoDB/settleNotifications.js';
+import { settlePlate } from 'server/DataSources/MongoDB/TreeOfLife/plates.js';
 import { TaxonVisualExhaustion, TaxonVisualStatus } from 'server/Types/graphql.js';
 import { generateTaxonDescription } from './generateDescription.js';
 import { runTaxonVisualPipeline } from './pipeline.js';

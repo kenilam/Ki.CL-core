@@ -3,7 +3,7 @@ import { withFilter } from 'graphql-subscriptions';
 import type { Context } from 'server/Context/index.js';
 import { anyProviderAvailable } from 'server/DataSources/AI/failover.js';
 import { buildImageProviders } from 'server/DataSources/AI/image/index.js';
-import { waitForPlate } from 'server/DataSources/MongoDB/settleNotifications.js';
+import { waitForPlate } from 'server/DataSources/MongoDB/TreeOfLife/plates.js';
 import { claimPlate, plateClaimed } from 'server/DataSources/MongoDB/TreeOfLife/claim.js';
 import { TreeOfLifeNodes } from 'server/DataSources/MongoDB/TreeOfLife/Model.js';
 import { ensureTreeOfLifeNodeByOttId } from 'server/DataSources/MongoDB/TreeOfLife/persist.js';
