@@ -4,14 +4,13 @@ import { SOURCE } from 'server/Helpers/language.js';
 import { TranslationRuns } from 'server/DataSources/MongoDB/TranslationRuns/Model.js';
 import { Translations } from 'server/DataSources/MongoDB/Translations/Model.js';
 
-export type Translation = { namespace: string; field: string; value: string };
 export type AcceptLanguageStatus = {
   acceptLanguage: string;
   complete: boolean;
   translating: boolean;
 };
 
-type Entry = { rows: Translation[]; values: Map<string, string> };
+type Entry = { values: Map<string, string> };
 type Store = Map<string, Entry>;
 
 const TTL_MS = 60_000;
@@ -67,9 +66,8 @@ function load(): Promise<Store> {
 
       for (const { 'accept-language': acceptLanguage, field, namespace, value } of rows) {
         const key = keyOf(acceptLanguage, namespace);
-        const entry = grouped.get(key) ?? { rows: [], values: new Map<string, string>() };
+        const entry = grouped.get(key) ?? { values: new Map<string, string>() };
 
-        entry.rows.push({ namespace, field, value });
         entry.values.set(field, value);
         grouped.set(key, entry);
 
@@ -125,50 +123,6 @@ export async function loadTranslations(): Promise<void> {
   } catch (error) {
     console.error('❌ Translations did not load:', error);
   }
-}
-
-/**
- * Each field of the namespaces, from the first of the languages that has it,
- * and the languages the fields came from, in the same order. The query runs
- * without a session, so it must not cost a database read per request. A copy
- * older than a minute is still returned while a fresh one loads, so a seed
- * shows within about a minute on each instance.
- */
-export async function findTranslations(
-  acceptLanguages: string[],
-  namespaces: string[],
-): Promise<{ translations: Translation[]; contentLanguages: string[] }> {
-  if (!CACHED || !store) {
-    store = await load();
-  }
-
-  if (Date.now() - loadedAt > TTL_MS) {
-    reload();
-  }
-
-  const current = store;
-  const used = new Set<string>();
-
-  const translations = namespaces.flatMap((namespace) => {
-    const fields = new Map<string, Translation>();
-
-    for (const acceptLanguage of acceptLanguages) {
-      for (const row of current.get(keyOf(acceptLanguage, namespace))?.rows ?? []) {
-        if (!fields.has(row.field)) {
-          fields.set(row.field, row);
-          used.add(acceptLanguage);
-        }
-      }
-    }
-
-    return [...fields.values()];
-  });
-
-  const contentLanguages = acceptLanguages.filter((acceptLanguage) => {
-    return used.has(acceptLanguage);
-  });
-
-  return { translations, contentLanguages };
 }
 
 /**
