@@ -12,6 +12,18 @@ steps:
     name: gcr.io/cloud-builders/docker
     args: ['push', '$_IMAGE']
 
+  # Core believes the visitor the gateway forwards, so only the gateway may reach it.
+  - id: Private
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        if gcloud run services get-iam-policy $_SERVICE_NAME --region=$_DEPLOY_REGION --format='value(bindings.members)' | grep -qE 'allUsers|allAuthenticatedUsers'; then
+          echo "$_SERVICE_NAME lets anyone invoke it. Remove allUsers and allAuthenticatedUsers before deploying."
+          exit 1
+        fi
+
   - id: Deploy
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
