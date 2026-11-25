@@ -426,7 +426,6 @@ export type Mutation = {
   /** Sends a message to the site's owner and acknowledges it at the sender's address. Needs a session that passed the Turnstile check. */
   contact?: Maybe<Scalars['Boolean']['output']>;
   deleteMe?: Maybe<Scalars['Boolean']['output']>;
-  exchangeToken?: Maybe<Scalars['Boolean']['output']>;
   /**
    * Go back to one of the person's messages and ask it again. Everything from
    * that message on leaves the conversation, and the message is sent again.
@@ -1494,7 +1493,6 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   activate?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationActivateArgs, 'activate'>>;
   contact?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationContactArgs, 'contact'>>;
   deleteMe?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteMeArgs, 'deleteMe'>>;
-  exchangeToken?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   imageAgentRetry?: Resolver<ResolversTypes['ImageAgentThread'], ParentType, ContextType, RequireFields<MutationImageAgentRetryArgs, 'threadId'>>;
   imageAgentSend?: Resolver<ResolversTypes['ImageAgentThread'], ParentType, ContextType, RequireFields<MutationImageAgentSendArgs, 'text'>>;
   kineticLightArrange?: Resolver<ResolversTypes['KineticLightReading'], ParentType, ContextType, RequireFields<MutationKineticLightArrangeArgs, 'id' | 'outline'>>;

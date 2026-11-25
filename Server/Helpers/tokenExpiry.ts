@@ -1,13 +1,11 @@
 /**
- * Token expiry logic:
- * - Access token expires 15 minutes after it is issued
- * - x-api-key expires at next midnight (00:00), or day-after-tomorrow if issued at or after 11:45 PM
- * - Refresh token expires on the 8th day at midnight (same 11:45 PM grace rule)
+ * The access token lasts 15 minutes. The refresh token lasts until midnight on
+ * the 8th day, or the 9th when it's issued at 23:45 or later.
  */
 
 const ACCESS_TOKEN_MS = 15 * 60 * 1000;
 
-const GRACE_MINUTES = 15; // 11:45 PM = 23:45 = 60 - 15 minutes before midnight
+const GRACE_MINUTES = 15;
 
 function getNextMidnight(fromDate: Date = new Date()): Date {
   const midnight = new Date(fromDate);
@@ -17,44 +15,21 @@ function getNextMidnight(fromDate: Date = new Date()): Date {
 }
 
 function isAfterGracePeriod(date: Date): boolean {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  // 23:45 or later
-  return hours === 23 && minutes >= (60 - GRACE_MINUTES);
+  return date.getHours() === 23 && date.getMinutes() >= 60 - GRACE_MINUTES;
 }
 
 export function getAccessTokenExpiry(now: Date = new Date()): Date {
   return new Date(now.getTime() + ACCESS_TOKEN_MS);
 }
 
-export function getApiKeyExpiry(now: Date = new Date()): Date {
-  const midnight = getNextMidnight(now);
-
-  if (isAfterGracePeriod(now)) {
-    // Push to day-after-tomorrow midnight
-    midnight.setDate(midnight.getDate() + 1);
-  }
-
-  return midnight;
-}
-
 export function getRefreshTokenExpiry(now: Date = new Date()): Date {
   const midnight = getNextMidnight(now);
 
-  // 8th day at midnight (7 more days from next midnight)
   midnight.setDate(midnight.getDate() + 7);
 
   if (isAfterGracePeriod(now)) {
-    // Push to 9th day midnight
     midnight.setDate(midnight.getDate() + 1);
   }
 
   return midnight;
-}
-
-/**
- * Returns seconds until the given expiry date (for JWT `expiresIn`).
- */
-export function secondsUntil(expiry: Date, now: Date = new Date()): number {
-  return Math.max(0, Math.floor((expiry.getTime() - now.getTime()) / 1000));
 }
