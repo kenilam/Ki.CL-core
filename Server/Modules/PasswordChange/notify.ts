@@ -1,4 +1,4 @@
-import { notify, text } from 'server/DataSources/MongoDB/Notifications/notify.js';
+import { notify, text } from 'server/DataSources/Notifications/notify.js';
 import { PasswordChanges } from 'server/DataSources/MongoDB/PasswordChanges/Model.js';
 
 const CHANGES = PasswordChanges.collection.collectionName;

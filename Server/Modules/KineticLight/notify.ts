@@ -1,5 +1,5 @@
 import { KineticLightReadings } from 'server/DataSources/MongoDB/KineticLightReadings/Model.js';
-import { notify, text } from 'server/DataSources/MongoDB/Notifications/notify.js';
+import { notify, text } from 'server/DataSources/Notifications/notify.js';
 import { KineticLightStage, KineticLightStatus } from 'server/Types/graphql.js';
 import type { ReadingResult } from './result.js';
 

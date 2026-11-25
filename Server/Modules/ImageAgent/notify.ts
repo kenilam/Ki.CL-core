@@ -1,5 +1,5 @@
 import { ImageAgentThreads } from 'server/DataSources/MongoDB/ImageAgentThreads/Model.js';
-import { notify, text } from 'server/DataSources/MongoDB/Notifications/notify.js';
+import { notify, text } from 'server/DataSources/Notifications/notify.js';
 import { ImageAgentMessageKind, ImageAgentRole, ImageAgentThreadStatus } from 'server/Types/graphql.js';
 import type { ImageAgentThreadResult } from './types.js';
 

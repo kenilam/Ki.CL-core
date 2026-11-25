@@ -452,8 +452,6 @@ export type Mutation = {
   kineticLightRead: KineticLightReading;
   /** Keeps a MIDI or MusicXML file as a song, so it has a link. */
   kineticLightSave: KineticLightReading;
-  /** Takes the caller's notifications out of their list, and returns their ids. */
-  notificationsDismiss: Array<Scalars['ID']['output']>;
   /** Sets the password kept with the request, once it has been confirmed. */
   passwordChangeComplete?: Maybe<Scalars['Boolean']['output']>;
   /** Called from the emailed link. Any session may call it: the secret is the proof. */
@@ -525,11 +523,6 @@ export type MutationKineticLightSaveArgs = {
 };
 
 
-export type MutationNotificationsDismissArgs = {
-  ids: Array<Scalars['ID']['input']>;
-};
-
-
 export type MutationPasswordChangeCompleteArgs = {
   passwordChangeComplete: PasswordChangeCompleteInput;
 };
@@ -572,34 +565,6 @@ export type MutationSwatchUploadArgs = {
 
 export type MutationUpdateMeArgs = {
   updateMe: UpdateMeInput;
-};
-
-/**
- * Work that carries on after its page is left: a sheet reading, an image agent
- * turn, a Tree of Life plate or a password change. There is one for each record
- * a visitor is told about, written again at each step. The site links it from
- * `collection`, the record's Mongo collection, and `documentId`.
- */
-export type Notification = {
-  __typename?: 'Notification';
-  collection: Scalars['String']['output'];
-  createdAt: Scalars['DateTime']['output'];
-  dismissedAt?: Maybe<Scalars['DateTime']['output']>;
-  documentId: Scalars['String']['output'];
-  id: Scalars['ID']['output'];
-  message: NotificationText;
-  title: NotificationText;
-  updatedAt: Scalars['DateTime']['output'];
-};
-
-/**
- * Words translated where they're shown: an i18next key in the host's `common`
- * namespace, or `api:` and a key in the API's, with the values it takes.
- */
-export type NotificationText = {
-  __typename?: 'NotificationText';
-  key: Scalars['String']['output'];
-  values: Scalars['JSONObject']['output'];
 };
 
 export type PasswordChange = {
@@ -677,8 +642,6 @@ export type Query = {
    * has not been read yet.
    */
   mentorship?: Maybe<Mentorship>;
-  /** The caller's notifications that haven't been dismissed, newest first. */
-  notifications: Array<Notification>;
   /** The signed-in user's request that is still waiting or confirmed, so a reloaded page can pick it up. */
   passwordChange?: Maybe<PasswordChange>;
   /** Whether the emailed link can still be confirmed. Any session may ask: the secret is the proof. */
@@ -829,8 +792,6 @@ export type Subscription = {
   imageAgentThreadUpdated: ImageAgentThread;
   /** Pushes each of the caller's readings as it fills in and when it finishes. */
   kineticLightReadingUpdated: KineticLightReading;
-  /** Pushes each of the caller's notifications when it's written or dismissed. */
-  notificationUpdated: Notification;
   /** The request's status now and on every change, until it is confirmed or expires. */
   passwordChangeUpdated: PasswordChange;
   /** Pushes a swatch as each step of making it finishes. */
@@ -1205,8 +1166,6 @@ export type ResolversTypes = ResolversObject<{
   MentorshipSession: ResolverTypeWrapper<MentorshipSession>;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
   NonEmptyString: ResolverTypeWrapper<Scalars['NonEmptyString']['output']>;
-  Notification: ResolverTypeWrapper<Notification>;
-  NotificationText: ResolverTypeWrapper<NotificationText>;
   PasswordChange: ResolverTypeWrapper<PasswordChange>;
   PasswordChangeCompleteInput: PasswordChangeCompleteInput;
   PasswordChangeConfirmInput: PasswordChangeConfirmInput;
@@ -1279,8 +1238,6 @@ export type ResolversParentTypes = ResolversObject<{
   MentorshipSession: MentorshipSession;
   Mutation: Record<PropertyKey, never>;
   NonEmptyString: Scalars['NonEmptyString']['output'];
-  Notification: Notification;
-  NotificationText: NotificationText;
   PasswordChange: PasswordChange;
   PasswordChangeCompleteInput: PasswordChangeCompleteInput;
   PasswordChangeConfirmInput: PasswordChangeConfirmInput;
@@ -1498,7 +1455,6 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   kineticLightArrange?: Resolver<ResolversTypes['KineticLightReading'], ParentType, ContextType, RequireFields<MutationKineticLightArrangeArgs, 'id' | 'outline'>>;
   kineticLightRead?: Resolver<ResolversTypes['KineticLightReading'], ParentType, ContextType, RequireFields<MutationKineticLightReadArgs, 'file'>>;
   kineticLightSave?: Resolver<ResolversTypes['KineticLightReading'], ParentType, ContextType, RequireFields<MutationKineticLightSaveArgs, 'song'>>;
-  notificationsDismiss?: Resolver<Array<ResolversTypes['ID']>, ParentType, ContextType, RequireFields<MutationNotificationsDismissArgs, 'ids'>>;
   passwordChangeComplete?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationPasswordChangeCompleteArgs, 'passwordChangeComplete'>>;
   passwordChangeConfirm?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationPasswordChangeConfirmArgs, 'passwordChangeConfirm'>>;
   passwordChangeRequest?: Resolver<ResolversTypes['PasswordChange'], ParentType, ContextType, RequireFields<MutationPasswordChangeRequestArgs, 'passwordChangeRequest'>>;
@@ -1515,22 +1471,6 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
 export interface NonEmptyStringScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['NonEmptyString'], any> {
   name: 'NonEmptyString';
 }
-
-export type NotificationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Notification'] = ResolversParentTypes['Notification']> = ResolversObject<{
-  collection?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  createdAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
-  dismissedAt?: Resolver<Maybe<ResolversTypes['DateTime']>, ParentType, ContextType>;
-  documentId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  message?: Resolver<ResolversTypes['NotificationText'], ParentType, ContextType>;
-  title?: Resolver<ResolversTypes['NotificationText'], ParentType, ContextType>;
-  updatedAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
-}>;
-
-export type NotificationTextResolvers<ContextType = Context, ParentType extends ResolversParentTypes['NotificationText'] = ResolversParentTypes['NotificationText']> = ResolversObject<{
-  key?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  values?: Resolver<ResolversTypes['JSONObject'], ParentType, ContextType>;
-}>;
 
 export type PasswordChangeResolvers<ContextType = Context, ParentType extends ResolversParentTypes['PasswordChange'] = ResolversParentTypes['PasswordChange']> = ResolversObject<{
   expiresAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
@@ -1557,7 +1497,6 @@ export type QueryResolvers<ContextType = Context, ParentType extends ResolversPa
   kineticLightSongs?: Resolver<Array<ResolversTypes['KineticLightSong']>, ParentType, ContextType>;
   me?: Resolver<Maybe<ResolversTypes['MePayload']>, ParentType, ContextType>;
   mentorship?: Resolver<Maybe<ResolversTypes['Mentorship']>, ParentType, ContextType>;
-  notifications?: Resolver<Array<ResolversTypes['Notification']>, ParentType, ContextType>;
   passwordChange?: Resolver<Maybe<ResolversTypes['PasswordChange']>, ParentType, ContextType>;
   passwordChangeLink?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<QueryPasswordChangeLinkArgs, 'passwordChangeLink'>>;
   swatch?: Resolver<Maybe<ResolversTypes['Swatch']>, ParentType, ContextType, RequireFields<QuerySwatchArgs, 'id'>>;
@@ -1577,7 +1516,6 @@ export type SubscriptionResolvers<ContextType = Context, ParentType extends Reso
   acceptLanguagesUpdated?: SubscriptionResolver<Array<ResolversTypes['AcceptLanguageStatus']>, "acceptLanguagesUpdated", ParentType, ContextType>;
   imageAgentThreadUpdated?: SubscriptionResolver<ResolversTypes['ImageAgentThread'], "imageAgentThreadUpdated", ParentType, ContextType, RequireFields<SubscriptionImageAgentThreadUpdatedArgs, 'id'>>;
   kineticLightReadingUpdated?: SubscriptionResolver<ResolversTypes['KineticLightReading'], "kineticLightReadingUpdated", ParentType, ContextType>;
-  notificationUpdated?: SubscriptionResolver<ResolversTypes['Notification'], "notificationUpdated", ParentType, ContextType>;
   passwordChangeUpdated?: SubscriptionResolver<ResolversTypes['PasswordChange'], "passwordChangeUpdated", ParentType, ContextType, RequireFields<SubscriptionPasswordChangeUpdatedArgs, 'id'>>;
   swatchUpdated?: SubscriptionResolver<ResolversTypes['Swatch'], "swatchUpdated", ParentType, ContextType, RequireFields<SubscriptionSwatchUpdatedArgs, 'id'>>;
   taxonVisualUpdated?: SubscriptionResolver<ResolversTypes['TaxonVisual'], "taxonVisualUpdated", ParentType, ContextType, RequireFields<SubscriptionTaxonVisualUpdatedArgs, 'ottId'>>;
@@ -1695,8 +1633,6 @@ export type Resolvers<ContextType = Context> = ResolversObject<{
   MentorshipSession?: MentorshipSessionResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   NonEmptyString?: GraphQLScalarType;
-  Notification?: NotificationResolvers<ContextType>;
-  NotificationText?: NotificationTextResolvers<ContextType>;
   PasswordChange?: PasswordChangeResolvers<ContextType>;
   Portfolio?: PortfolioResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
