@@ -1,12 +1,16 @@
 import { createHash, randomBytes } from 'node:crypto';
-import type { Response } from 'express';
 
 import { Sessions, type ISession } from 'server/DataSources/MongoDB/Sessions/Model.js';
 import * as accessTokens from './accessTokens.js';
-import { setAccessTokenCookie, setAudCookie, setRefreshTokenCookie } from './cookies.js';
 import { getAccessTokenExpiry, getRefreshTokenExpiry } from './tokenExpiry.js';
 
 type Kind = ISession['kind'];
+
+export type Authorization =
+  | { access_token: string; refresh_token: string; aud: Kind }
+  | { revoke: true };
+
+export const revoke: Authorization = { revoke: true };
 
 const LEEWAY_MS = 30_000;
 
@@ -14,13 +18,15 @@ const digest = (token: string) => createHash('sha256').update(token).digest('hex
 
 const mint = () => randomBytes(32).toString('base64url');
 
-async function issue(res: Response | null, userGUID: string, kind: Kind, refreshToken: string): Promise<void> {
-  setAccessTokenCookie(res, await accessTokens.sign({ sub: userGUID }, getAccessTokenExpiry()));
-  setRefreshTokenCookie(res, refreshToken);
-  setAudCookie(res, kind);
+async function issue(userGUID: string, kind: Kind, refreshToken: string): Promise<Authorization> {
+  return {
+    access_token: await accessTokens.sign({ sub: userGUID }, getAccessTokenExpiry()),
+    refresh_token: refreshToken,
+    aud: kind,
+  };
 }
 
-export async function start(res: Response | null, userGUID: string, kind: Kind): Promise<void> {
+export async function start(userGUID: string, kind: Kind): Promise<Authorization> {
   if (kind === 'user') {
     await Sessions.deleteMany({ userGUID });
   }
@@ -28,12 +34,13 @@ export async function start(res: Response | null, userGUID: string, kind: Kind):
   const refreshToken = mint();
 
   await Sessions.create({ hash: digest(refreshToken), userGUID, kind, expiresAt: getRefreshTokenExpiry() });
-  await issue(res, userGUID, kind, refreshToken);
+
+  return issue(userGUID, kind, refreshToken);
 }
 
-export async function renew(res: Response | null, refreshToken: string | undefined): Promise<boolean> {
+export async function renew(refreshToken: string | undefined): Promise<Authorization | null> {
   if (!refreshToken) {
-    return false;
+    return null;
   }
 
   const now = new Date();
@@ -50,12 +57,10 @@ export async function renew(res: Response | null, refreshToken: string | undefin
   );
 
   if (!record) {
-    return false;
+    return null;
   }
 
-  await issue(res, record.userGUID as string, record.kind as Kind, next);
-
-  return true;
+  return issue(record.userGUID as string, record.kind as Kind, next);
 }
 
 export async function end(refreshToken: string | undefined): Promise<void> {

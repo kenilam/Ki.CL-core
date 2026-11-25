@@ -1,18 +1,5 @@
 import { createPrivateKey, createPublicKey, type KeyObject } from 'node:crypto';
-import type { Response } from 'express';
-import {
-  calculateJwkThumbprint,
-  createLocalJWKSet,
-  errors,
-  exportJWK,
-  jwtVerify,
-  SignJWT,
-  type JWK,
-  type JWTVerifyGetKey,
-} from 'jose';
-
-import type { TokenPayload } from './auth.js';
-import { clearAuthCookies } from './cookies.js';
+import { calculateJwkThumbprint, decodeJwt, exportJWK, SignJWT, type JWK } from 'jose';
 
 const ALGORITHM = 'EdDSA';
 const TYPE = 'at+jwt';
@@ -20,7 +7,6 @@ const TYPE = 'at+jwt';
 interface Keys {
   privateKey: KeyObject;
   jwk: JWK;
-  keySet: JWTVerifyGetKey;
 }
 
 let keys: Promise<Keys> | undefined;
@@ -31,7 +17,7 @@ function load(): Promise<Keys> {
     const publicJwk = await exportJWK(createPublicKey(privateKey));
     const jwk = { ...publicJwk, kid: await calculateJwkThumbprint(publicJwk), alg: ALGORITHM, use: 'sig' };
 
-    return { privateKey, jwk, keySet: createLocalJWKSet({ keys: [jwk] }) };
+    return { privateKey, jwk };
   })();
 
   return keys;
@@ -53,31 +39,14 @@ export async function sign(payload: { sub: string }, expiresAt: Date): Promise<s
     .sign(privateKey);
 }
 
-export async function read(
-  token: string | undefined,
-  res: Response | null,
-): Promise<{ payload: TokenPayload | null; invalid: boolean }> {
+export function subject(token: string | undefined): string | null {
   if (!token) {
-    return { payload: null, invalid: false };
+    return null;
   }
 
-  const { keySet } = await load();
-
   try {
-    const { payload } = await jwtVerify<{ sub: string; iat: number; exp: number }>(token, keySet, {
-      algorithms: [ALGORITHM],
-      typ: TYPE,
-      requiredClaims: ['sub', 'iat', 'exp'],
-    });
-
-    return { payload: { userGUID: payload.sub, iat: payload.iat, exp: payload.exp }, invalid: false };
-  } catch (error) {
-    if (error instanceof errors.JWTExpired) {
-      return { payload: null, invalid: false };
-    }
-
-    clearAuthCookies(res);
-
-    return { payload: null, invalid: true };
+    return decodeJwt(token).sub ?? null;
+  } catch {
+    return null;
   }
 }

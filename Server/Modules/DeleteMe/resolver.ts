@@ -8,7 +8,6 @@ import { PortfolioAccess } from 'server/DataSources/MongoDB/PortfolioAccess/Mode
 import { Registrations } from 'server/DataSources/MongoDB/Registrations/Model.js';
 import { Users } from 'server/DataSources/MongoDB/Users/Model.js';
 import * as session from 'server/Helpers/session.js';
-import { clearAuthCookies } from 'server/Helpers/cookies.js';
 import { forgetOwner } from 'server/DataSources/MongoDB/forgetImageAgentOwner.js';
 import { BadUserInput, Unauthenticated } from 'server/Errors/index.js';
 import type { Context } from 'server/Context/index.js';
@@ -50,7 +49,7 @@ export default {
       await forgetOwner(userGUID);
       await Users.deleteOne({ userGUID });
 
-      clearAuthCookies(context.res);
+      context.authorization = session.revoke;
 
       return true;
     },

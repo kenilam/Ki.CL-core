@@ -15,10 +15,7 @@ import { schema } from './Schema.js';
 import { createContext, createWsContext, type Context } from './Context/index.js';
 import { corsMiddleware } from './Middleware/cors.js';
 import { securityHeaders } from './Middleware/securityHeaders.js';
-import { authenticate } from './Middleware/authenticate.js';
-import { apiProxy } from './Middleware/apiProxy.js';
 import { acceptLanguage } from './Middleware/acceptLanguage.js';
-import { sessionRoute } from './Modules/ExchangeToken/route.js';
 import { connectDatabase, mongoose, pingPrimary } from './DataSources/MongoDB/index.js';
 import { stopWatchingChanges, watchChanges } from './DataSources/MongoDB/changes.js';
 import { runsRoute } from './DataSources/Google/Tasks/index.js';
@@ -29,13 +26,7 @@ import { runTaxonVisualTask } from './Modules/TaxonVisual/task.js';
 import { loadTranslations } from 'server/DataSources/MongoDB/translationsCache.js';
 import { createGoogleStorageAssetHandler } from './DataSources/Google/Storage/assetHandler.js';
 import * as accessTokens from './Helpers/accessTokens.js';
-import { loadCerts } from './Helpers/certs.js';
-import {
-  authorizeWsOperation,
-  readWsCredentials,
-  wsValidate,
-} from './Helpers/wsAuthorize.js';
-import type { IncomingMessage } from 'node:http';
+import { wsValidate } from './Helpers/websocket.js';
 
 const PORT = Number(process.env.PORT) || 3100;
 const GOOGLE_STORAGE_PROXY = process.env.GOOGLE_STORAGE_PROXY || '/assets';
@@ -43,17 +34,6 @@ const GRAPHQL_BODY_LIMIT = '12mb';
 
 const app = express();
 const httpServer = createServer(app);
-
-const wsContext = async (ctx: {
-  connectionParams?: Record<string, unknown> | undefined;
-  extra?: { request?: IncomingMessage };
-}) => {
-  const request = ctx.extra?.request;
-  return createWsContext({
-    connectionParams: ctx.connectionParams,
-    request,
-  });
-};
 
 /**
  * Two paths share one HTTP server. Attaching two WebSocketServers with
@@ -63,22 +43,10 @@ const wsContext = async (ctx: {
 const graphqlWss = new WebSocketServer({ noServer: true });
 const apiWss = new WebSocketServer({ noServer: true });
 
-/*
- * The HTTP authenticate middleware never runs on a WebSocket upgrade, so its
- * rule is applied here instead: wsValidate blocks introspection when it is
- * off, and onSubscribe requires the kicl_ prefix and a session for every other
- * operation. Without it the public resolvers answer an unauthenticated socket,
- * which the HTTP path refuses.
- */
 const wsServerOptions: ServerOptions<ConnectionInitMessage['payload'], Extra> = {
   schema,
-  context: wsContext,
+  context: (ctx) => createWsContext({ connectionParams: ctx.connectionParams, request: ctx.extra.request }),
   validate: wsValidate,
-  onSubscribe: async (ctx, _id, payload) =>
-    (await authorizeWsOperation(
-      readWsCredentials({ connectionParams: ctx.connectionParams, request: ctx.extra.request }),
-      payload,
-    )) ?? undefined,
 };
 
 const graphqlWsCleanup = useServer(wsServerOptions, graphqlWss);
@@ -119,6 +87,20 @@ const server = new ApolloServer<Partial<Context>>({
         };
       },
     },
+    {
+      async requestDidStart() {
+        return {
+          async willSendResponse({ contextValue, response }) {
+            if (contextValue.authorization && response.body.kind === 'single') {
+              response.body.singleResult.extensions = {
+                ...response.body.singleResult.extensions,
+                authorization: contextValue.authorization,
+              };
+            }
+          },
+        };
+      },
+    },
     process.env.APOLLO_PLAYGROUND === 'true'
       ? ApolloServerPluginLandingPageLocalDefault({ footer: true })
       : ApolloServerPluginLandingPageDisabled(),
@@ -129,7 +111,6 @@ async function start() {
   await connectDatabase();
   // The server's own messages are read from memory, so the strings are loaded before it answers.
   await loadTranslations();
-  await loadCerts();
   await server.start();
   // The modules have registered how their records become events by now.
   watchChanges();
@@ -163,26 +144,12 @@ async function start() {
     app.get('/', (req, res) => { res.status(404).end(); });
   }
 
-  const graphqlMiddleware = [
+  const graphqlRoute = [
     securityHeaders,
     cookieParser(),
     corsMiddleware,
     express.json({ limit: GRAPHQL_BODY_LIMIT }),
     acceptLanguage,
-    authenticate,
-    expressMiddleware(server, {
-      context: createContext,
-    }),
-  ] as const;
-
-  const apiMiddleware = [
-    securityHeaders,
-    cookieParser(),
-    corsMiddleware,
-    express.json({ limit: GRAPHQL_BODY_LIMIT }),
-    acceptLanguage,
-    apiProxy,
-    authenticate,
     expressMiddleware(server, {
       context: createContext,
     }),
@@ -196,17 +163,9 @@ async function start() {
     'taxon-visual': runTaxonVisualTask,
   }));
 
-  /*
-   * ExchangeToken without GraphQL, ahead of the BFF so Apollo doesn't take the
-   * path. It needs no key: the BFF lets anyone run ExchangeToken too.
-   */
-  app.post('/api/session', securityHeaders, corsMiddleware, acceptLanguage, sessionRoute);
-
-  // Public BFF - injects x-api-key server-side; never exposes it to the browser
-  app.use('/api', ...apiMiddleware);
-  // Playground / introspection (may still issue x-api-key cookie for local debugging)
-  app.use('/graphql', ...graphqlMiddleware);
-  app.use('/', ...graphqlMiddleware);
+  app.use('/api', ...graphqlRoute);
+  app.use('/graphql', ...graphqlRoute);
+  app.use('/', ...graphqlRoute);
 
   // Catch-all: 404 for any unmatched route
   app.use((req, res) => {

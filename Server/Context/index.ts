@@ -5,19 +5,20 @@ import { Users, type IUser } from 'server/DataSources/MongoDB/Users/Model.js';
 import { createAssetLoaders } from 'server/DataSources/MongoDB/Assets/loaders.js';
 import { createTreeOfLifeLoaders } from 'server/DataSources/MongoDB/TreeOfLife/loaders.js';
 import * as accessTokens from 'server/Helpers/accessTokens.js';
-import type { TokenPayload } from 'server/Helpers/auth.js';
-import { readWsCredentials } from 'server/Helpers/wsAuthorize.js';
+import type { Authorization } from 'server/Helpers/session.js';
+import { readWsCredentials } from 'server/Helpers/websocket.js';
 
 export type AuthenticatedUser = Pick<IUser, 'userGUID' | 'email' | 'active'>;
 
 export interface Context {
   headers: Record<string, string | string[] | undefined>;
-  /** Present for HTTP; absent for WebSocket (subscriptions cannot set cookies). */
+  /** Present for HTTP; absent for WebSocket. */
   res: Response | null;
   user: AuthenticatedUser | null;
   operationName: string | undefined;
-  isWhitelisted: boolean;
-  tokenPayload: Pick<TokenPayload, 'userGUID'> | null;
+  tokenPayload: { userGUID: string } | null;
+  /** Sent to the gateway in the response's `extensions`, which sets the cookies from it. */
+  authorization: Authorization | null;
   loaders: ReturnType<typeof createLoaders>;
 }
 
@@ -29,7 +30,7 @@ function createLoaders() {
 }
 
 async function resolveUser(
-  tokenPayload: TokenPayload | null,
+  tokenPayload: Context['tokenPayload'],
 ): Promise<AuthenticatedUser | null> {
   if (!tokenPayload) return null;
 
@@ -47,65 +48,47 @@ async function resolveUser(
   };
 }
 
+function visitor(accessToken: string | undefined): Context['tokenPayload'] {
+  const userGUID = accessTokens.subject(accessToken);
+
+  return userGUID ? { userGUID } : null;
+}
+
 export async function createContext({ req, res }: ExpressContextFunctionArgument): Promise<Context> {
-  const headers = req.headers as Record<string, string | string[] | undefined>;
-  const operationName = req.body?.operationName;
-
-  /*
-   * The middleware only attaches the payload on the path that requires a token.
-   * Every client operation includes `__typename`, which the introspection check
-   * matches as `__type`, so on `/api` that path is never taken. Resolvers then
-   * couldn't tell who was calling, even with a valid cookie. Read the cookie
-   * here too, the way the WebSocket context already does.
-   */
-  const tokenPayload =
-    req.tokenPayload || (await accessTokens.read(req.cookies?.access_token, res as unknown as Response)).payload;
-
-  const isWhitelisted = !tokenPayload;
-
-  const user = await resolveUser(tokenPayload);
+  const tokenPayload = visitor(req.cookies?.access_token);
 
   return {
-    headers,
+    headers: req.headers as Record<string, string | string[] | undefined>,
     res: res as unknown as Response,
-    user,
-    operationName,
-    isWhitelisted,
+    user: await resolveUser(tokenPayload),
+    operationName: req.body?.operationName,
     tokenPayload,
+    authorization: null,
     loaders: createLoaders(),
   };
 }
 
-/**
- * Build GraphQL context for graphql-ws connections.
- * Auth comes from Cookie header on the upgrade request, or from connectionParams.
- */
 export async function createWsContext(args: {
   connectionParams?: Record<string, unknown> | undefined;
   request?: IncomingMessage;
 }): Promise<Context> {
-  const { connectionParams, request } = args;
-
-  const { accessToken, cookieHeader } = readWsCredentials({ connectionParams, request });
-
-  const { payload: tokenPayload } = await accessTokens.read(accessToken, null);
-  const user = await resolveUser(tokenPayload);
+  const { accessToken, cookieHeader } = readWsCredentials(args);
+  const tokenPayload = visitor(accessToken);
 
   const headers: Record<string, string | string[] | undefined> = {
-    ...(request?.headers as Record<string, string | string[] | undefined>),
+    ...(args.request?.headers as Record<string, string | string[] | undefined>),
   };
   if (cookieHeader) {
     headers.cookie = cookieHeader;
   }
 
-
   return {
     headers,
     res: null,
-    user,
+    user: await resolveUser(tokenPayload),
     operationName: undefined,
-    isWhitelisted: !tokenPayload,
     tokenPayload,
+    authorization: null,
     loaders: createLoaders(),
   };
 }

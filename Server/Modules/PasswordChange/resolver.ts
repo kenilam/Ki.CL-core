@@ -176,8 +176,8 @@ export default {
         throw BadUserInput(translate('api', 'error_password_change_unconfirmed'));
       }
 
-      // New tokens replace the stored refresh token, so a session on another device can't renew.
-      await session.start(context.res, userGUID, 'user');
+      await session.endAll(userGUID);
+      context.authorization = session.revoke;
 
       // The password has changed either way, so a failed notice doesn't fail the request.
       await Gmail.send({

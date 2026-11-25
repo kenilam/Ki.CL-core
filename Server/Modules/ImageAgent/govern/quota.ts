@@ -67,7 +67,7 @@ export type Allowance = Omit<ImageAgentAllowance, '__typename' | 'running' | 'ne
 /**
  * A caller is the owner of the session token, and nothing else. Clearing
  * cookies or changing device starts a new session with its own allowance; the
- * Turnstile check on ExchangeToken is what keeps that from being scripted.
+ * gateway's Turnstile check on every new session keeps that from being scripted.
  */
 
 /** When the caller last said anything, across every conversation. */

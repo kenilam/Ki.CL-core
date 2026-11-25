@@ -1,7 +1,7 @@
 import { Unauthenticated } from 'server/Errors/index.js';
 import type { Context } from 'server/Context/index.js';
 import { translate } from 'server/Helpers/translate.js';
-import { parseCookies } from 'server/Helpers/auth.js';
+import { parseCookies } from 'server/Helpers/cookies.js';
 import * as session from 'server/Helpers/session.js';
 
 export default {
@@ -13,9 +13,13 @@ export default {
         throw Unauthenticated(translate('api', 'error_refresh_token_missing'));
       }
 
-      if (!(await session.renew(context.res, token))) {
+      const authorization = await session.renew(token);
+
+      if (!authorization) {
         throw Unauthenticated(translate('api', 'error_refresh_token_invalid'));
       }
+
+      context.authorization = authorization;
 
       return true;
     },
